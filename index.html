@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e6ebef">
+<title>The Scan Room</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
+body{{margin:0}}
+img{{max-width:100%}}
+/* Layout: a radiology reading room. Light-box panels around black scanner viewports; greyscale tissue, with the fMRI "hot" colormap reserved for activation and correct answers. */
+:root{
+  --bg:#e6ebef; --panel:#f6f8fa; --panel2:#edf1f4; --ink:#14202b; --muted:#56687a; --line:#c3ced7;
+  --brain:#d8dee3; --hover:#bccad6; --rim:#a6b3bf; --rim-strong:#5f7184; --sulcus:#7b8a99; --crest:#f7f9fb;
+  --l-front:#c7d4e6; --l-mot:#e9c8bd; --l-som:#ead9b2; --l-par:#d7cfe7; --l-temp:#c6e0d0; --l-occ:#e8c9d6; --l-cb:#d5d9c0; --l-bs:#d6cdc4;
+  --hot:#e0532a; --hot2:#f2b322; --cool:#2a7d9c;
+  --good:#257a4d; --bad:#b8352a; --bad-soft:#efc9c4; --good-soft:#cfe8d9;
+  --vp:#000; --vp-ink:#cbd9e4; --vp-dim:#71879a;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1318; --panel:#141e27; --panel2:#18242f; --ink:#e2e9ef; --muted:#8c9eae; --line:#273541;
+  --brain:#38454f; --hover:#4a5b6b; --rim:#4c5c6b; --rim-strong:#8193a5; --sulcus:#192229; --crest:#5d6e7d;
+  --l-front:#304558; --l-mot:#5a3a31; --l-som:#574b2d; --l-par:#41395a; --l-temp:#2d4c3d; --l-occ:#533545; --l-cb:#444833; --l-bs:#48413a;
+  --hot:#ff6a3c; --hot2:#ffc73a; --cool:#4fb2d3;
+  --good:#4cc38a; --bad:#ff7066; --bad-soft:#4a2624; --good-soft:#1d3b2c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1318; --panel:#141e27; --panel2:#18242f; --ink:#e2e9ef; --muted:#8c9eae; --line:#273541;
+  --brain:#38454f; --hover:#4a5b6b; --rim:#4c5c6b; --rim-strong:#8193a5; --sulcus:#192229; --crest:#5d6e7d;
+  --l-front:#304558; --l-mot:#5a3a31; --l-som:#574b2d; --l-par:#41395a; --l-temp:#2d4c3d; --l-occ:#533545; --l-cb:#444833; --l-bs:#48413a;
+  --hot:#ff6a3c; --hot2:#ffc73a; --cool:#4fb2d3;
+  --good:#4cc38a; --bad:#ff7066; --bad-soft:#4a2624; --good-soft:#1d3b2c; color-scheme:dark}
+
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:40px 40px;background-position:-1px -1px;background-attachment:fixed}
+body::after{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,transparent 0,var(--bg) 70%);pointer-events:none;z-index:-1}
+#app{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 56px;position:relative}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.brand{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center}
+.brand b{color:var(--ink);font-weight:500}
+.rec{width:8px;height:8px;border-radius:50%;background:var(--hot);box-shadow:0 0 0 3px color-mix(in srgb,var(--hot) 25%,transparent);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.readout{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;font-variant-numeric:tabular-nums;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);white-space:nowrap}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:.92;text-transform:uppercase;letter-spacing:.01em}
+h1{font-size:clamp(68px,15vw,136px);font-weight:800}
+h1 span{color:var(--hot)}
+h2{font-size:clamp(38px,8vw,58px);font-weight:800;margin-bottom:14px}
+h3{font-size:30px;font-weight:700}
+p{margin:0}
+.lead{font-size:18px;max-width:62ch}
+.cap{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.03em;margin-top:8px;line-height:1.45}
+figure{margin:0}
+svg{display:block;max-width:100%;height:auto}
+
+.intro{display:grid;grid-template-columns:1fr;gap:14px 28px;align-items:end;margin-bottom:22px}
+@media (min-width:760px){.intro{grid-template-columns:auto 1fr}}
+.intro .lead{padding-bottom:6px}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0}
+.phead{display:flex;justify-content:space-between;gap:10px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:0 2px 10px;border-bottom:1px dashed var(--line);margin-bottom:10px}
+.phead b{color:var(--ink);font-weight:500}
+.lab{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:34px}
+@media (min-width:760px){.lab{grid-template-columns:1.25fr 1fr}}
+
+/* viewport */
+.vp{position:relative;background:var(--vp);border-radius:4px;overflow:hidden;aspect-ratio:1/1;width:100%;max-width:100%}
+.vp canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.vp canvas.ovl{mix-blend-mode:normal}
+.ov{position:absolute;font-family:var(--f-mono);font-size:10.5px;color:var(--vp-ink);letter-spacing:.04em;line-height:1.35;pointer-events:none;text-shadow:0 0 3px #000}
+.ov.tl{top:8px;left:9px}.ov.tr{top:8px;right:9px;text-align:right}.ov.bl{bottom:8px;left:9px}.ov.br{bottom:8px;right:9px;text-align:right}
+.ov.ol{left:6px;top:50%;transform:translateY(-50%)}.ov.or{right:6px;top:50%;transform:translateY(-50%)}
+.ov.ot{top:24px;left:50%;transform:translateX(-50%)}.ov.ob{bottom:24px;left:50%;transform:translateX(-50%)}
+.ov.dim{color:var(--vp-dim)}
+.sbar{display:block;height:2px;background:var(--vp-ink);margin-bottom:3px}
+.xh{position:absolute;pointer-events:none;border-color:rgba(242,179,34,.35);border-style:dashed;border-width:0}
+.xh.h{left:0;right:0;top:50%;border-top-width:1px}.xh.v{top:0;bottom:0;left:50%;border-left-width:1px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font:500 12px var(--f-mono);letter-spacing:.06em;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ctl{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.ctl label{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+.ctl label b{color:var(--ink);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--hot)}
+.explain{font-size:14px;color:var(--muted);margin-top:10px;max-width:60ch}
+.explain b{color:var(--ink)}
+
+/* stations */
+.stations{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:620px){.stations{grid-template-columns:1fr 1fr}}
+@media (min-width:900px){.stations{grid-template-columns:1fr 1fr 1fr}}
+.station{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative;overflow:hidden}
+.station .glyph{position:absolute;right:12px;top:12px;width:62px;height:62px;opacity:.9}
+.station p.desc{color:var(--muted);font-size:15px;flex:1;padding-right:4px}
+.station h3{padding-right:70px}
+.sfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.status{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.status.done{color:var(--good)}
+.report{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.report .eyebrow,.report p.desc{color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+.meter{display:flex;gap:3px;margin-top:4px}
+.meter i{flex:1;height:8px;border-radius:2px;background:color-mix(in srgb,var(--bg) 22%,var(--ink))}
+.meter i.on{background:var(--hot)}
+
+.btn{font:700 15px/1 var(--f-body);background:var(--ink);color:var(--bg);border:0;border-radius:6px;padding:12px 18px;cursor:pointer;transition:transform .1s}
+.btn:hover{transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.report .btn{background:var(--bg);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+button:focus-visible,.opt:focus-visible{outline:2px solid var(--hot2);outline-offset:2px}
+.back{font:500 13px var(--f-mono);background:none;border:0;color:var(--muted);cursor:pointer;padding:6px 0}
+.back:hover{color:var(--ink)}
+
+.shead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.dots{display:flex;gap:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.ok{background:var(--hot)} .dots i.no{background:var(--rim-strong)} .dots i.cur{box-shadow:0 0 0 2px var(--hot2)}
+.case{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.split{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:760px){.split{grid-template-columns:1.2fr 1fr}.split.even{grid-template-columns:1fr 1fr}}
+
+/* brain */
+.reg{fill:var(--brain);stroke:var(--rim);stroke-width:.7;stroke-dasharray:2 3;transition:fill .15s}
+.atlas .reg[data-id=frontal],.atlas .reg[data-id=broca]{fill:var(--l-front)}
+.atlas .reg[data-id=motor]{fill:var(--l-mot)} .atlas .reg[data-id=somato]{fill:var(--l-som)}
+.atlas .reg[data-id=parietal]{fill:var(--l-par)} .atlas .reg[data-id=temporal],.atlas .reg[data-id=wernicke]{fill:var(--l-temp)}
+.atlas .reg[data-id=occipital]{fill:var(--l-occ)} .atlas .reg[data-id=cerebellum]{fill:var(--l-cb)} .atlas .reg[data-id=stem]{fill:var(--l-bs)}
+.atlas .reg{stroke:none}
+svg.interactive .reg{cursor:pointer}
+svg.interactive:not(.done) .reg:hover{fill:var(--hover)}
+.reg:focus{outline:none}
+.reg:focus-visible{stroke:var(--hot2);stroke-width:2.5}
+.reg.answer{fill:var(--hot)!important;stroke:var(--hot2);stroke-width:2}
+.reg.miss{fill:var(--bad-soft)!important;stroke:var(--bad);stroke-width:2}
+.outline{fill:none;stroke:var(--rim-strong);stroke-width:1.8}
+.sulci{pointer-events:none}
+.sulci path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sulci .cr{stroke:var(--crest);stroke-width:1.3;opacity:.8}
+.sulci .su{stroke:var(--sulcus);stroke-width:1.5}
+.sulci .mj{stroke-width:2.6}
+.sulci .mn{stroke-width:1;opacity:.75}
+.shade{pointer-events:none}
+.rlabel{font:500 9.5px var(--f-mono);fill:var(--ink);pointer-events:none;paint-order:stroke;stroke:var(--panel);stroke-width:3px;letter-spacing:.04em;text-transform:uppercase}
+.slice-line{stroke:var(--hot2);stroke-width:1.6;stroke-dasharray:6 4}
+.slice-tag{font:500 9px var(--f-mono);fill:var(--hot)}
+.brainwrap{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 8px 10px}
+
+/* feedback */
+.fb{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-top:14px}
+.verdict{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500}
+.verdict.ok{color:var(--good)} .verdict.no{color:var(--bad)}
+.vtext{font-weight:700}
+.fb .btn{align-self:flex-start;margin-top:4px}
+.fb .vp{max-width:320px}
+
+/* options */
+.opts{display:grid;grid-template-columns:1fr;gap:8px}
+.opts.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (min-width:600px){.opts.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.opts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.opt{font:inherit;color:var(--ink);text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:11px 13px;cursor:pointer;min-width:0;transition:border-color .15s,background .15s}
+.opt:hover:not(:disabled){border-color:var(--rim-strong)}
+.opt:disabled{cursor:default}
+.opt b{display:block;font-family:var(--f-display);font-size:24px;letter-spacing:.02em;line-height:1}
+.opt small{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.dim{opacity:.55}
+
+/* charts */
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;min-width:0}
+.ax{stroke:var(--rim-strong);stroke-width:1}
+.grid{stroke:var(--line);stroke-width:1}
+.ptxt{font-family:var(--f-mono);font-size:9px;fill:var(--muted)}
+.ptitle{font-family:var(--f-mono);font-size:9px;fill:var(--ink);letter-spacing:.06em}
+.mbox{fill:var(--brain);stroke:var(--rim-strong);stroke-width:1;opacity:.9}
+.mbox.ans{fill:var(--hot);stroke:var(--hot2);stroke-width:2;opacity:1}
+.mbox.wr{fill:var(--bad-soft);stroke:var(--bad);stroke-width:2}
+.mlab{font:700 11px var(--f-mono);fill:var(--ink);pointer-events:none}
+.trace{fill:none;stroke:var(--hot);stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+.trace.base{stroke:var(--rim-strong)}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .9s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.dash{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.guess{stroke:var(--hot2);stroke-width:2;stroke-dasharray:5 3}
+.cursor{stroke:var(--cool);stroke-width:1.5}
+.stim{fill:var(--cool)}
+
+/* neuron */
+.neuron{max-width:680px;margin:0 auto}
+.neuron .mem{fill:var(--brain);stroke:var(--rim-strong);stroke-width:1.2}
+.neuron .den{fill:none;stroke:var(--rim-strong);stroke-linecap:round}
+.neuron .axon{stroke:var(--rim-strong);stroke-width:3;stroke-linecap:round}
+.neuron .myelin{fill:var(--panel2);stroke:var(--rim-strong);stroke-width:1}
+.neuron .node{fill:var(--hot2);opacity:0}
+.neuron .node.lit{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.neuron .nuc{fill:var(--rim-strong);opacity:.5}
+.spike{fill:var(--hot2);filter:drop-shadow(0 0 4px var(--hot))}
+
+.cards{display:grid;grid-template-columns:1fr;gap:8px}
+.card{font:inherit;font-size:15px;text-align:left;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:11px 13px;cursor:pointer}
+.card:hover{border-color:var(--rim-strong)}
+.card.placed{display:none}
+.card.shake{animation:shake .35s;border-color:var(--bad)}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.seq{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.seq:empty{display:none}
+.seq li{font-size:14.5px;display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:baseline}
+.seq li span{font-family:var(--f-mono);font-size:12px;color:var(--hot)}
+
+.slider{display:flex;flex-direction:column;gap:8px}
+.slider label{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+
+.result{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px;display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.big{font-family:var(--f-display);font-weight:800;font-size:72px;line-height:.9;font-variant-numeric:tabular-nums}
+.big small{font-size:32px;opacity:.6}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.foot{margin-top:28px;font-size:13px;color:var(--muted);max-width:66ch}
+
+@media (prefers-reduced-motion: reduce){.draw{animation:none;stroke-dashoffset:0}.card.shake,.rec,.neuron .node.lit{animation:none}.btn{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <span class="brand"><i class="rec" aria-hidden="true"></i><b>The Scan Room</b><span>· 3 T imaging lab</span></span>
+    <span class="readout" id="readout">Score 0 / 27</span>
+  </header>
+  <main id="view"></main>
+</div>
+
+<script>
+(function(){
+const view=document.getElementById('view');
+const reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const MAX={map:6,scan:5,neuron:6,bold:5,read:5};
+const TOTAL=27;
+const EMPTY={map:null,scan:null,neuron:null,bold:null,read:null};
+let scores=Object.assign({},EMPTY,store.get('scanroom-v2')||{});
+function save(){store.set('scanroom-v2',scores)}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function sum(){return Object.values(scores).reduce((s,v)=>s+(v||0),0)}
+function readout(live){document.getElementById('readout').textContent='Score '+(sum()+(live||0))+' / '+TOTAL}
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function hash(i,j){let h=(Math.imul(i|0,374761393)+Math.imul(j|0,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return (h>>>0)/4294967296}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+ const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function capDist(px,py,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,t=clamp(((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy),0,1);return Math.hypot(px-ax-t*dx,py-ay-t*dy)}
+function wrap(a){while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;return a}
+
+/* ================= Lateral brain illustration ================= */
+const r1=v=>Math.round(v*10)/10;
+function cr(p){let d='';for(let i=0;i<p.length-1;i++){const p0=p[i-1]||p[i],p1=p[i],p2=p[i+1],p3=p[i+2]||p2;
+ d+=`C${r1(p1[0]+(p2[0]-p0[0])/6)} ${r1(p1[1]+(p2[1]-p0[1])/6)} ${r1(p2[0]-(p3[0]-p1[0])/6)} ${r1(p2[1]-(p3[1]-p1[1])/6)} ${p2[0]} ${p2[1]}`}return d}
+const op=p=>`M${p[0][0]} ${p[0][1]}`+cr(p);
+function region(segs){let d=`M${segs[0][0][0]} ${segs[0][0][1]}`;segs.forEach(s=>{d+=`L${s[0][0]} ${s[0][1]}`;if(s.length>1)d+=cr(s)});return d+'Z'}
+const rev=a=>a.slice().reverse(), sub=(a,i,j)=>a.slice(i,j+1);
+// landmark sulci (lateral view, left hemisphere, frontal pole on the left)
+const SYL=[[116,184],[136,177],[156,169],[176,163],[194,159],[212,156],[232,152],[250,146],[262,138],[272,126]];
+const CEN=[[216,0],[214,28],[207,52],[204,78],[196,104],[188,128],[182,148],[176,163]];
+const PRE=[[192,0],[188,34],[180,58],[178,84],[170,110],[162,138],[156,169]];
+const POST=[[242,0],[238,34],[232,58],[228,84],[222,110],[216,134],[212,156]];
+const POL=[[336,0],[334,72],[328,110],[320,145],[310,190],[302,232],[298,300]];
+const STS=[[108,206],[130,204],[170,194],[220,186],[262,176],[284,164],[300,148]];
+const OUTLINE='M44 150C34 110 55 70 95 50C135 28 190 22 240 30C290 38 340 65 362 110C375 140 372 170 360 190C345 208 320 222 300 230C270 240 230 246 195 242C160 238 128 228 112 212C104 202 102 190 112 184C96 182 62 176 44 150Z';
+const REGIONS=[
+ {id:'stem',name:'Brainstem',d:'M236 236C246 228 268 230 272 240C278 258 274 272 268 284L264 300L244 300C244 288 236 276 234 262C232 250 230 242 236 236Z',out:true,lx:256,ly:292},
+ {id:'cerebellum',name:'Cerebellum',d:'M258 236C262 222 300 214 340 212C362 212 374 228 366 246C356 266 320 276 292 270C270 265 254 252 258 236Z',out:true,lx:322,ly:256},
+ {id:'frontal',name:'Frontal lobe',d:region([[[0,0],[192,0]],PRE,rev(sub(SYL,0,2)),[[0,196]]]),lx:96,ly:100},
+ {id:'motor',name:'Primary motor cortex',d:region([[[192,0],[216,0]],CEN,rev(sub(SYL,2,3)),rev(PRE)]),lx:190,ly:70},
+ {id:'somato',name:'Primary somatosensory cortex',d:region([[[216,0],[242,0]],POST,rev(sub(SYL,3,5)),rev(CEN)]),lx:222,ly:70},
+ {id:'parietal',name:'Parietal lobe',d:region([[[242,0],[336,0]],sub(POL,0,3),[[272,126]],rev(sub(SYL,5,9)),rev(POST)]),lx:286,ly:90},
+ {id:'temporal',name:'Temporal lobe',d:region([SYL,[[320,145]],sub(POL,3,6),[[0,300],[0,196]]]),lx:196,ly:218},
+ {id:'occipital',name:'Occipital lobe',d:region([[[336,0],[400,0],[400,300],[298,300]],rev(POL)]),lx:345,ly:168},
+ {id:'broca',name:"Broca's area",d:region([[[118,113],[124,111],[150,108],[170,110]],sub(PRE,4,6),[[136,177],[126,181]],[[118,150]]]),lx:142,ly:150},
+ {id:'wernicke',name:"Wernicke's area",d:region([[[222,154],[232,152],[250,146],[262,138]],[[284,164]],[[262,176],[220,186]],[[216,172]]]),lx:252,ly:170}
+];
+const REG={};REGIONS.forEach(r=>REG[r.id]=r);
+const MAJOR=[SYL];
+const MED=[CEN,PRE,POST,STS,
+ [[70,82],[100,72],[140,66],[184,62]], // superior frontal sulcus
+ [[56,128],[90,117],[124,111],[150,108],[172,108]], // inferior frontal sulcus
+ [[230,92],[256,88],[284,96],[310,112],[330,132],[346,150]], // intraparietal
+ [[138,226],[180,220],[230,214],[270,210],[300,206]], // inferior temporal
+ [[136,177],[120,172],[106,168]], // anterior horizontal ramus
+ [[146,173],[146,152],[141,134]], // anterior ascending ramus
+ [[318,178],[340,172],[364,178]], // lateral occipital
+ [[334,62],[336,76],[331,92]] // parieto-occipital notch
+];
+const MINOR=[[[46,140],[58,152],[72,160]],[[88,92],[96,102],[93,114]],[[112,58],[122,52],[134,46]],[[60,104],[74,100],[84,106]],
+ [[118,84],[130,90],[146,88]],[[100,140],[110,146],[106,158]],[[256,58],[266,68],[264,82]],[[290,58],[300,70],[304,84]],
+ [[262,112],[272,108],[282,114]],[[300,148],[310,160],[320,152]],[[332,100],[344,112],[352,128]],[[340,146],[352,152],[360,164]],
+ [[316,196],[328,200],[342,196]],[[160,206],[180,206],[196,200]],[[240,198],[256,200],[270,196]],[[200,232],[222,228],[244,230]],
+ [[196,40],[200,48]],[[226,40],[230,50]],[[176,132],[170,140]],[[204,128],[210,138]],[[150,80],[160,74],[172,78]],[[70,170],[84,174],[98,172]],[[130,140],[136,150],[132,160]],[[248,110],[256,120],[252,132]],
+ [[280,130],[290,126],[298,134]],[[306,64],[316,74],[318,88]],[[354,96],[362,108],[364,120]],[[120,214],[136,218],[150,216]],
+ [[260,222],[276,224],[288,220]],[[180,184],[196,182],[208,176]],[[78,64],[88,60],[98,62]],[[150,36],[162,34],[172,38]],
+ [[290,104],[302,100],[312,104]],[[226,150],[236,142],[244,144]]];
+const FOLIA=[[[264,228],[300,220],[340,218],[366,226]],[[262,244],[300,238],[340,234],[368,236]],[[270,256],[305,252],[340,250],[362,246]],[[284,265],[310,264],[340,262]],[[296,224],[330,226],[356,232]]];
+const STEMLINES=[[[238,252],[250,246],[266,248]],[[240,268],[252,264],[266,266]],[[252,276],[256,300]]];
+let uid=0;
+const sliceY=z=>133.7-z*108.7;
+function brainSVG(o){
+ o=o||{};const id='b'+(++uid);
+ const reg=r=>`<path class="reg" data-id="${r.id}" d="${r.d}"${o.interactive?' tabindex="0" role="button" aria-label="Brain region"':''}/>`;
+ const sul=(arr,cls)=>arr.map(p=>`<path class="cr ${cls}" transform="translate(.9 1)" d="${op(p)}"/><path class="su ${cls}" d="${op(p)}"/>`).join('');
+ const glow=(o.glow||[]).map(g=>`<circle cx="${g.x}" cy="${g.y}" r="${g.r}" fill="url(#${id}g)"/>`).join('');
+ const labels=o.labels?['frontal','parietal','temporal','occipital','cerebellum','stem'].map(k=>`<text class="rlabel" x="${REG[k].lx}" y="${REG[k].ly}" text-anchor="middle">${REG[k].name.replace(' lobe','')}</text>`).join('')+
+   `<text class="rlabel" x="196" y="20" text-anchor="middle" style="font-size:8px">central sulcus ↓</text>`:'';
+ const slice=o.slice!=null?`<g id="sliceG"><line class="slice-line" x1="26" x2="378" y1="${sliceY(o.slice)}" y2="${sliceY(o.slice)}"/><text class="slice-tag" x="378" y="${sliceY(o.slice)-5}" text-anchor="end">AXIAL SLICE</text></g>`:'';
+ return `<svg class="brain${o.interactive?' interactive':''}${o.atlas?' atlas':''}" viewBox="22 10 360 294" role="img" aria-label="Side view of the left hemisphere of the brain">
+ <defs><clipPath id="${id}c"><path d="${OUTLINE}"/></clipPath><clipPath id="${id}k"><path d="${REG.cerebellum.d}"/></clipPath>
+ <radialGradient id="${id}g"><stop offset="0" style="stop-color:var(--hot2)"/><stop offset=".5" style="stop-color:var(--hot);stop-opacity:.85"/><stop offset="1" style="stop-color:var(--hot);stop-opacity:0"/></radialGradient>
+ <radialGradient id="${id}s" cx=".35" cy=".25" r=".85"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></radialGradient></defs>
+ ${reg(REG.stem)}<g class="sulci">${sul(STEMLINES,'mn')}</g>
+ ${reg(REG.cerebellum)}<g clip-path="url(#${id}k)"><g class="sulci">${sul(FOLIA,'')}<path class="su mj" d="${op([[258,240],[300,232],[340,228],[370,230]])}"/></g><rect class="shade" x="250" y="200" width="130" height="80" fill="url(#${id}s)"/></g>
+ <path class="outline" d="${REG.cerebellum.d}" style="stroke-width:1.2"/>
+ <g clip-path="url(#${id}c)">${REGIONS.filter(r=>!r.out).map(reg).join('')}
+  <g class="sulci">${sul(MINOR,'mn')}${sul(MED,'')}${sul(MAJOR,'mj')}</g>
+  <rect class="shade" x="30" y="20" width="350" height="230" fill="url(#${id}s)"/>${glow}</g>
+ <path class="outline" d="${OUTLINE}"/>${slice}<g class="lbls">${labels}</g></svg>`;
+}
+function labelRegion(svg,id){const r=REG[id];svg.querySelector('.lbls').insertAdjacentHTML('beforeend',`<text class="rlabel" x="${r.lx}" y="${r.ly}" text-anchor="middle">${r.name.replace(' cortex','').replace('Primary ','').replace(' lobe','')}</text>`)}
+
+/* ================= Axial slice tissue model ================= */
+// classes: 0 air 1 scalp 2 skull 3 diploe 4 csf 5 grey 6 white 7 caudate 8 putamen 9 ventricle 10 thalamus
+const NS=46,SUL=[];for(let k=0;k<NS;k++)SUL.push({a:(k+.5+(hash(k,7)-.5)*.7)*TAU/NS,dep:.1+hash(k,11)*.17,c:(hash(k,13)-.5)*1.6,zs:hash(k,17)-.5,w:hash(k,19)*TAU,br:hash(k,23)<.55?(hash(k,29)<.5?-1:1):0});
+const NS2=46,SUL2=[];for(let k=0;k<NS2;k++)SUL2.push({a:(k+(hash(k,31)-.5)*.6)*TAU/NS2,dep:.035+hash(k,37)*.06,c:(hash(k,41)-.5)*2});
+const SLC={};const NPX=256;
+function classify(z){
+ const key=z.toFixed(2);if(SLC[key])return SLC[key];
+ const N=NPX,n=N*N,cls=new Uint8Array(n),dir=new Float32Array(n*3),th=new Float32Array(n),dp=new Float32Array(n),EX=new Float32Array(n),EY=new Float32Array(n);
+ const s=Math.sqrt(Math.max(.08,1-(z/1.05)**2));
+ const vz=clamp(1-Math.abs(z-.08)/.28,0,1),vt=clamp(1-Math.abs(z-.02)/.2,0,1),vb=clamp(1-Math.abs(z)/.26,0,1);
+ const sylD=.36*clamp(1-(z-.15)/.3,0,1);
+ const ihF=z>.42?1.01:.62,ihB=z>.42?1.01:.56;
+ const SY=[TAU-.16,Math.PI+.16];
+ for(let py=0;py<N;py++){const y=(py+.5)/N*2.1-1.05;for(let px=0;px<N;px++){
+  const i=py*N+px,x=(px+.5)/N*2.1-1.05,ex=x/(.78*s),ey=y/(.95*s),r=Math.hypot(ex,ey);EX[i]=ex;EY[i]=ey;
+  if(r>1){cls[i]=0;continue}
+  if(r>.955){cls[i]=1;continue}
+  if(r>.9){cls[i]=(r>.916&&r<.938)?3:2;continue}
+  if(r>.88){cls[i]=4;continue}
+  const nz=vnoise(ex*5+z*4+11,ey*5+3),nz2=vnoise(ex*11+5,ey*11+z*6);
+  const b=r/.88*(1+(nz-.5)*.03),d=Math.max(0,1-b);let t=Math.atan2(ey,ex);if(t<0)t+=TAU;th[i]=t;dp[i]=d;
+  const tw=t+(nz2-.5)*.05;
+  let dist=d,csf=d<.004;const k0=Math.floor(tw/TAU*NS);
+  for(let k=k0-1;k<=k0+1;k++){const kk=(k+NS)%NS,S=SUL[kk];const ang=S.a+S.c*d+.07*Math.sin(d*16+S.w+z*3)+S.zs*z*.8;
+   const da=wrap(tw-ang),arc=Math.abs(da)*b*.85,D=S.dep*(1+.25*Math.sin(z*6+kk));
+   let dd=d<=D?arc:Math.hypot(arc,d-D);if(d<=D&&arc<.0068)csf=true;
+   if(S.br&&d>D*.35&&d<D*.8){const ab=Math.abs(wrap(tw-ang-S.br*(d-D*.35)*.9))*b*.85;if(ab<dd)dd=ab;if(ab<.006)csf=true}
+   if(dd<dist)dist=dd}
+  const j0=Math.floor(tw/TAU*NS2);
+  for(let k=j0;k<=j0+1;k++){const S=SUL2[(k+NS2)%NS2];if(d>S.dep)continue;const arc=Math.abs(wrap(tw-S.a-S.c*d))*b*.85;if(arc<dist)dist=arc;if(arc<.005)csf=true}
+  if(sylD>0)for(const a of SY){const arc=Math.abs(wrap(tw-a-.25*d))*b*.85;const dd=d<=sylD?arc:Math.hypot(arc,d-sylD);if(dd<dist)dist=dd;if(d<=sylD&&arc<.013)csf=true}
+  const lim=ey<0?-(1-ihF)*.88:(1-ihB)*.88;const inF=ey<0?ey<lim:ey>lim;const ax=Math.abs(ex);
+  {const fx=ax-(nz-.5)*.02;const dd=inF?Math.abs(fx):Math.hypot(fx,ey-lim);if(dd<dist)dist=dd;if(inF&&Math.abs(fx)<.011)csf=true}
+  if(csf){cls[i]=4;continue}
+  let c=dist<.058+nz2*.03?5:6;
+  if(d>.3){
+   const vf=capDist(ax,ey,.03,-.05,.12,-.31)<(.032+.03*clamp((-.05-ey)/.2,0,1))*vz;
+   const vp=capDist(ax,ey,.05,-.02,.23,.31)<(.03+.026*clamp((ey-.16)/.14,0,1))*vz;
+   if(vz>0&&(vf||vp)&&ax>.011){cls[i]=9;continue}
+   if(vt>.2&&ax<.012&&ey>-.04&&ey<.16){cls[i]=9;continue}
+   if(vz>0&&Math.hypot(ax-.19,(ey+.19)/1.3)<.07*vz)c=7;
+   else if(vt>0&&Math.hypot((ax-.08)/.07,(ey-.1)/.09)<vt)c=10;
+   else if(vb>0&&Math.hypot((ax-.27)/.05,(ey+.03)/.13)<vb)c=8;
+  }
+  if(c===6){
+   // fibre orientation: radial in gyri, tangential (callosal / association) deep, vertical in internal capsule & corona radiata
+   const rw=clamp((.34-d)/.12,0,1);let tx=-ey,ty=ex;const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;
+   let R=Math.abs(Math.cos(t))*rw+Math.abs(tx)*(1-rw),G=Math.abs(Math.sin(t))*rw+Math.abs(ty)*(1-rw),B=.18;
+   const ic=z<.32?clamp(1-Math.hypot((ax-.19)/.06,(ey+.03)/.2),0,1):0;
+   const cr=z>.42?clamp((z-.42)/.15,0,1)*clamp((ax-.06)/.1,0,1)*clamp(1-(ax-.32)/.12,0,1)*(1-rw):0;
+   const bw=Math.max(ic,cr);R*=1-bw;G*=1-bw;B=B*(1-bw)+bw;
+   dir[i*3]=R;dir[i*3+1]=G;dir[i*3+2]=B;
+  }
+  cls[i]=c;
+ }}
+ return SLC[key]={cls,dir,th,dp,EX,EY,s};
+}
+const VAL={t1:[.02,.82,.06,.55,.08,.45,.78,.5,.52,.07,.52],t2:[.02,.62,.05,.42,.95,.56,.33,.45,.38,.97,.47],ct:[0,.36,1,.86,.14,.44,.37,.45,.45,.13,.45]};
+function newCanvas(n){const c=document.createElement('canvas');c.width=c.height=n;return c}
+function blur(A,N,r,passes){const T=new Float32Array(A.length);for(let p=0;p<passes;p++){
+ for(let y=0;y<N;y++){let acc=0;for(let x=-r;x<=r;x++)acc+=A[y*N+clamp(x,0,N-1)];for(let x=0;x<N;x++){T[y*N+x]=acc/(2*r+1);acc+=A[y*N+clamp(x+r+1,0,N-1)]-A[y*N+clamp(x-r,0,N-1)]}}
+ for(let x=0;x<N;x++){let acc=0;for(let y=-r;y<=r;y++)acc+=T[clamp(y,0,N-1)*N+x];for(let y=0;y<N;y++){A[y*N+x]=acc/(2*r+1);acc+=T[clamp(y+r+1,0,N-1)*N+x]-T[clamp(y-r,0,N-1)*N+x]}}}}
+const PETMAP=[[0,[0,0,0]],[.15,[38,8,88]],[.35,[118,18,140]],[.55,[222,42,60]],[.75,[250,150,22]],[.9,[255,228,90]],[1,[255,255,255]]];
+function ramp(v,M){v=clamp(v,0,1);for(let k=1;k<M.length;k++)if(v<=M[k][0]){const [a,ca]=M[k-1],[b,cb]=M[k],u=(v-a)/(b-a);return [ca[0]+(cb[0]-ca[0])*u,ca[1]+(cb[1]-ca[1])*u,ca[2]+(cb[2]-ca[2])*u]}return M[M.length-1][1]}
+
+function renderSlice(mode,z,seed){
+ seed=seed||1;const C=classify(z),N=NPX,cv=newCanvas(N),ctx=cv.getContext('2d'),im=ctx.createImageData(N,N),P=im.data;
+ const put=(i,r,g,b)=>{P[i*4]=r;P[i*4+1]=g;P[i*4+2]=b;P[i*4+3]=255};
+ if(mode==='t1'||mode==='t2'||mode==='ct'||mode==='ctbleed'){
+  const isCT=mode!=='t1'&&mode!=='t2',V=VAL[isCT?'ct':mode];
+  for(let i=0;i<N*N;i++){const px=i%N,py=(i/N)|0,c=C.cls[i];let v=V[c];
+   if(mode==='ctbleed'&&c>=5&&c!==9){const e=((C.EX[i]+.36)/.1)**2+((C.EY[i]+.04)/.075)**2;if(e<1)v=.8;else if(e<2.1)v=.27}
+   const n=(hash(px+seed*977,py)-.5)*(isCT?.05:.07)+(vnoise(px/5+seed,py/5)-.5)*.05;
+   v=c===0?(isCT?0:Math.abs(n)*.6):clamp(v+n,0,1);
+   const g=v*255;put(i,g,g,g)}
+ }else if(mode==='fa'){
+  for(let i=0;i<N*N;i++){const c=C.cls[i],px=i%N,py=(i/N)|0;let rgb=[0,0,0],fa=0;
+   const radial=[Math.abs(Math.cos(C.th[i])),Math.abs(Math.sin(C.th[i])),.22];
+   if(c===6){fa=.6+(vnoise(px/3+seed,py/3)-.5)*.4+(C.dp[i]>.4?.15:0);rgb=[C.dir[i*3],C.dir[i*3+1],C.dir[i*3+2]];const m=Math.max(rgb[0],rgb[1],rgb[2])||1;rgb=rgb.map(v=>v/m)}
+   else if(c===5){fa=.12;rgb=radial}else if(c===7||c===8||c===10){fa=.16;rgb=[.45,.45,.8]}else if(c===4||c===9)fa=.03;
+   fa=clamp(fa+(hash(px*3+seed,py)-.5)*.1,0,1);if(c<4)fa=0;put(i,rgb[0]*fa*255,rgb[1]*fa*255,rgb[2]*fa*255)}
+ }else if(mode==='pet'||mode==='petd2'){
+  const A=new Float32Array(N*N),W=mode==='pet'?{5:1,7:1.05,8:1.1,10:1.05,6:.28,1:.05}:{7:1,8:1,5:.13,10:.16,6:.08,1:.03};
+  for(let i=0;i<N*N;i++)A[i]=W[C.cls[i]]||0;blur(A,N,4,3);
+  for(let i=0;i<N*N;i++){const px=i%N,py=(i/N)|0;let v=A[i]*(1+(vnoise(px/3+seed*7,py/3)-.5)*.35)+(hash(px,py+seed)-.5)*.05*A[i];v=clamp(v/ (mode==='pet'?.95:.7),0,1);const [r,g,b]=ramp(v,PETMAP);put(i,r,g,b)}
+ }else if(mode==='epi'){
+  const s=64,E={0:.02,1:.07,2:.02,3:.04,4:.86,5:.6,6:.44,7:.55,8:.52,9:.9,10:.55},sm=newCanvas(s),sx=sm.getContext('2d'),si=sx.createImageData(s,s);
+  for(let by=0;by<s;by++)for(let bx=0;bx<s;bx++){let acc=0;for(let k=0;k<4;k++){const i=(by*4+(k>>1)*2+1)*N+bx*4+(k&1)*2+1;acc+=E[C.cls[i]]}
+   let v=acc/4+(hash(bx+seed,by*7)-.5)*.07;v=clamp(v,0,1)*255;const j=(by*s+bx)*4;si.data[j]=si.data[j+1]=si.data[j+2]=v;si.data[j+3]=255}
+  sx.putImageData(si,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,N,N);ctx.imageSmoothingEnabled=true;ctx.drawImage(sm,0,0,N,N);
+  ctx.globalAlpha=.08;ctx.drawImage(sm,0,N/2,N,N);ctx.drawImage(sm,0,-N/2,N,N);ctx.globalAlpha=1;return cv;
+ }
+ ctx.putImageData(im,0,0);return cv;
+}
+function blobCanvas(z,sites,neg){
+ const C=classify(z),s=64,N=NPX,sm=newCanvas(s),sx=sm.getContext('2d'),si=sx.createImageData(s,s);
+ for(let by=0;by<s;by++)for(let bx=0;bx<s;bx++){const i=(by*4+2)*N+bx*4+2,c=C.cls[i];let v=0;
+  if(c===5||c===7||c===8||c===10||(c===6&&C.dp[i]<.33)){for(const b of sites){v+=b.a*Math.exp(-((C.EX[i]-b.x)**2+(C.EY[i]-b.y)**2)/(2*b.r*b.r))}}
+  const j=(by*s+bx)*4;if(v>.32){const u=clamp((v-.32)/.6,0,1);
+   if(neg){si.data[j]=30;si.data[j+1]=110+u*145;si.data[j+2]=255}else{si.data[j]=255;si.data[j+1]=60+u*195;si.data[j+2]=u>.7?(u-.7)*600:0}
+   si.data[j+3]=235}}
+ sx.putImageData(si,0,0);const cv=newCanvas(N),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.drawImage(sm,0,0,N,N);return cv;
+}
+/* ---------- signal plots on the viewport ---------- */
+const VPF='"JetBrains Mono",ui-monospace,monospace';
+function drawEEG(ctx,seed){
+ const W=512;ctx.fillStyle='#000';ctx.fillRect(0,0,W,W);
+ const ch=['Fp1','Fp2','F3','F4','C3','C4','P3','P4','O1','O2'],al=[.05,.05,.12,.12,.3,.3,.7,.7,1,1],bl=[1,1,.35,.35,.07,.07,0,0,0,0];
+ const x0=70,x1=500,top=40,h=42,k=.42;
+ ctx.strokeStyle='rgba(120,150,175,.28)';ctx.lineWidth=1;for(let s=0;s<=4;s++){const x=x0+s*(x1-x0)/4;ctx.beginPath();ctx.moveTo(x,top-10);ctx.lineTo(x,top+h*10);ctx.stroke()}
+ ctx.font='500 17px '+VPF;
+ ch.forEach((name,c)=>{const yb=top+h*(c+.5),ph=hash(c,seed)*TAU,ph2=hash(c+9,seed)*TAU,ph3=hash(c+20,seed)*TAU;
+  ctx.fillStyle='#71879a';ctx.fillText(name,10,yb+6);ctx.strokeStyle='#cbd9e4';ctx.lineWidth=1.3;ctx.beginPath();
+  for(let x=x0;x<=x1;x++){const t=(x-x0)/(x1-x0)*4,env=.55+.45*Math.sin(TAU*.6*t+ph2);
+   const v=al[c]*40*Math.sin(TAU*10.2*t+ph)*env+bl[c]*130*(Math.exp(-Math.pow((t-1.3)/.13,2))+Math.exp(-Math.pow((t-3.05)/.13,2)))+8*Math.sin(TAU*2.1*t+ph3)+4*Math.sin(TAU*21*t+ph*2)+(hash(x,c*31+seed)-.5)*6;
+   x===x0?ctx.moveTo(x,yb-v*k):ctx.lineTo(x,yb-v*k)}ctx.stroke()});
+ ctx.strokeStyle='#cbd9e4';ctx.lineWidth=2;const yb=top+h*10+26;ctx.beginPath();ctx.moveTo(x0,yb);ctx.lineTo(x0+(x1-x0)/4,yb);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(470,yb);ctx.lineTo(470,yb-50*k);ctx.stroke();ctx.fillStyle='#cbd9e4';ctx.fillText('1 s',x0+(x1-x0)/8-14,yb+20);ctx.fillText('50 µV',400,yb-4);
+}
+function drawMEG(ctx,seed){
+ const W=512;ctx.fillStyle='#000';ctx.fillRect(0,0,W,W);
+ const cx=256,cy=196,R=168,im=ctx.getImageData(0,0,W,W),P=im.data;
+ const src=[[-.58,-.2,1],[-.5,.32,-1],[.52,.3,.75],[.6,-.2,-.75]];
+ for(let y=cy-R;y<=cy+R;y++)for(let x=cx-R;x<=cx+R;x++){const nx=(x-cx)/R,ny=(y-cy)/R;if(nx*nx+ny*ny>1)continue;
+  let v=0;for(const [a,b,s] of src)v+=s*Math.exp(-((nx-a)**2+(ny-b)**2)/.09);
+  const q=v/.16,frac=q-Math.floor(q),line=frac<.09||frac>.97;let r,g,b;const m=Math.min(1,Math.abs(v));
+  if(v>=0){r=40+215*m;g=24+50*m;b=24+20*m}else{r=20+30*m;g=40+100*m;b=50+205*m}
+  if(line){r=Math.min(255,r+60);g=Math.min(255,g+60);b=Math.min(255,b+60)}
+  const j=(y*W+x)*4;P[j]=r;P[j+1]=g;P[j+2]=b;P[j+3]=255}
+ ctx.putImageData(im,0,0);
+ ctx.strokeStyle='#71879a';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(cx-16,cy-R+2);ctx.lineTo(cx,cy-R-18);ctx.lineTo(cx+16,cy-R+2);ctx.stroke();
+ ctx.beginPath();ctx.ellipse(cx-R-6,cy,8,24,0,0,TAU);ctx.stroke();ctx.beginPath();ctx.ellipse(cx+R+6,cy,8,24,0,0,TAU);ctx.stroke();
+ ctx.fillStyle='rgba(220,232,240,.75)';[[0,1],[.2,6],[.4,12],[.6,18],[.8,24],[.95,30]].forEach(([rr,n])=>{for(let k=0;k<n;k++){const a=k/n*TAU+rr;ctx.beginPath();ctx.arc(cx+Math.cos(a)*rr*R,cy+Math.sin(a)*rr*R,2.6,0,TAU);ctx.fill()}});
+ ctx.font='500 16px '+VPF;ctx.fillStyle='#ff8a64';ctx.fillText('+150 fT',14,30);ctx.fillStyle='#6aa6ff';ctx.fillText('−150 fT',14,52);
+ const bx0=60,bx1=490,by=470,bh=72;ctx.strokeStyle='#71879a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(bx0,by);ctx.lineTo(bx1,by);ctx.stroke();
+ ctx.fillStyle='#71879a';[0,100,200,300].forEach(t=>{const x=bx0+t/300*(bx1-bx0);ctx.fillText(t+'',x-10,by+20)});ctx.fillText('ms',bx1-14,by-6);
+ ctx.strokeStyle='rgba(255,199,58,.5)';ctx.setLineDash([4,4]);const xm=bx0+100/300*(bx1-bx0);ctx.beginPath();ctx.moveTo(xm,by-bh-12);ctx.lineTo(xm,by);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ffc73a';ctx.fillText('M100',xm+5,by-bh-2);
+ for(let k=0;k<26;k++){const a=(hash(k,seed+3)*2-1);ctx.strokeStyle=k===3?'#ff8a64':'rgba(205,218,228,.35)';ctx.lineWidth=k===3?2:1;ctx.beginPath();
+  for(let x=bx0;x<=bx1;x+=2){const t=(x-bx0)/(bx1-bx0)*300;const w=Math.exp(-Math.pow((t-100)/20,2))-.35*Math.exp(-Math.pow((t-190)/40,2))+.2*Math.exp(-Math.pow((t-52)/11,2));
+   const v=(k===3?1:a)*w*bh*.85+(hash(x,k+seed)-.5)*5;x===bx0?ctx.moveTo(x,by-bh/2-v*.5):ctx.lineTo(x,by-bh/2-v*.5)}ctx.stroke()}
+}
+function drawFNIRS(ctx,seed){
+ const W=512;ctx.fillStyle='#000';ctx.fillRect(0,0,W,W);
+ ctx.strokeStyle='#71879a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(256,168,120,140,0,0,TAU);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(240,30);ctx.lineTo(256,10);ctx.lineTo(272,30);ctx.stroke();
+ const xs=[166,211,256,301,346],ys=[78,122];
+ ctx.lineWidth=3;for(let r=0;r<2;r++)for(let c=0;c<5;c++){const nb=[[r,c+1],[r+1,c]];nb.forEach(([rr,cc])=>{if(rr<2&&cc<5){const act=Math.exp(-Math.pow((xs[c]+xs[cc])/2-226,2)/3000);ctx.strokeStyle=`rgba(255,${200-act*130},${120-act*90},${.35+act*.6})`;ctx.beginPath();ctx.moveTo(xs[c],ys[r]);ctx.lineTo(xs[cc],ys[rr]);ctx.stroke()}})}
+ for(let r=0;r<2;r++)for(let c=0;c<5;c++){const src=(r+c)%2===0;ctx.fillStyle=src?'#ff6b5e':'#5aa9ff';if(src){ctx.beginPath();ctx.arc(xs[c],ys[r],9,0,TAU);ctx.fill()}else ctx.fillRect(xs[c]-8,ys[r]-8,16,16)}
+ ctx.font='500 16px '+VPF;ctx.fillStyle='#ff6b5e';ctx.fillText('● source',20,250);ctx.fillStyle='#5aa9ff';ctx.fillText('■ detector',20,272);
+ const x0=60,x1=496,y0=470,yz=400,k=95;ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(x0+10/40*(x1-x0),300,20/40*(x1-x0),y0-300);
+ ctx.fillStyle='#71879a';ctx.fillText('task',x0+10/40*(x1-x0)+6,318);
+ ctx.strokeStyle='#71879a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0,yz);ctx.lineTo(x1,yz);ctx.stroke();
+ [0,10,20,30,40].forEach(t=>ctx.fillText(t+'',x0+t/40*(x1-x0)-8,y0+24));ctx.fillText('s',x1-6,y0+6);ctx.fillText('Δ µM',6,330);
+ const shape=t=>{const sm=u=>u<=0?0:u>=1?1:u*u*(3-2*u);return sm((t-12)/7)-sm((t-31)/7)};
+ [['#ff6b5e',.62,0,'HbO'],['#5aa9ff',-.22,1,'HbR']].forEach(([col,amp,lag,lab],q)=>{ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.beginPath();
+  for(let x=x0;x<=x1;x++){const t=(x-x0)/(x1-x0)*40;const v=amp*shape(t-lag)+(q?.015:.05)*Math.sin(TAU*.1*t+q)+(q?0:.03*Math.sin(TAU*1.1*t))+(hash(x,q+seed)-.5)*.03;x===x0?ctx.moveTo(x,yz-v*k):ctx.lineTo(x,yz-v*k)}ctx.stroke();
+  ctx.fillStyle=col;ctx.fillText(lab,x1-46,q?yz+44:yz-70)});
+}
+const FMRI_SITES=[{x:.08,y:.8,r:.07,a:1},{x:-.08,y:.8,r:.07,a:.9},{x:.6,y:.08,r:.07,a:.8},{x:-.6,y:.08,r:.07,a:.75}];
+function paintScan(cv,type,z,seed){
+ const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.clearRect(0,0,cv.width,cv.height);
+ if(type==='eeg')return drawEEG(ctx,seed||1);
+ if(type==='meg')return drawMEG(ctx,seed||1);
+ if(type==='fnirs')return drawFNIRS(ctx,seed||1);
+ if(type==='fmri'){ctx.drawImage(renderSlice('epi',z,seed),0,0,cv.width,cv.height);ctx.drawImage(blobCanvas(z,FMRI_SITES),0,0,cv.width,cv.height);return}
+ if(type==='smri')type='t1';if(type==='dti')type='fa';
+ ctx.drawImage(renderSlice(type,z,seed),0,0,cv.width,cv.height);
+}
+const META={
+ t1:{tl:'AX T1 MPRAGE<br>3.0 T · 1.0 mm iso',tr:'TR 2300 · TE 2.98<br>W 1200 L 600',name:'T1-weighted MRI'},
+ t2:{tl:'AX T2 TSE<br>3.0 T · 0.9 × 0.9 mm',tr:'TR 4000 · TE 90<br>W 1400 L 700',name:'T2-weighted MRI'},
+ ct:{tl:'CT HEAD NON-CONTRAST<br>120 kV · 5 mm',tr:'BRAIN WINDOW<br>W 80 L 40 HU',name:'CT'},
+ ctbleed:{tl:'CT HEAD NON-CONTRAST<br>120 kV · 5 mm',tr:'BRAIN WINDOW<br>W 80 L 40 HU',name:'CT'},
+ fa:{tl:'DTI · COLOUR FA<br>64 dirs · b 1000',tr:'<span style="color:#ff6b6b">R–L</span> <span style="color:#5ef08a">A–P</span> <span style="color:#6c8cff">S–I</span>',name:'DTI'},
+ pet:{tl:'¹⁸F-FDG PET<br>40 min uptake',tr:'SUV 0 – 9',name:'PET'},
+ petd2:{tl:'¹¹C-RACLOPRIDE PET<br>D2 receptor binding',tr:'BP<sub>ND</sub> 0 – 3',name:'PET'},
+ fmri:{tl:'EPI BOLD · 3 mm<br>TR 2000 · TE 30',tr:'z > 3.1<br>cluster p < .05',name:'fMRI'},
+ eeg:{tl:'EEG · 10–20 SYSTEM<br>256 Hz · eyes closed',tr:'',name:'EEG'},
+ meg:{tl:'MEG · 306 SENSORS<br>auditory evoked',tr:'',name:'MEG'},
+ fnirs:{tl:'fNIRS · 760 / 850 nm<br>prefrontal array',tr:'',name:'fNIRS'}
+};
+const IMG_TYPES=['t1','t2','ct','ctbleed','fa','pet','petd2','fmri'];
+function viewport(id,type,o){o=o||{};const m=o.hide?{tl:o.hideText||'IMAGE '+(o.n||1)+'<br>source withheld',tr:''}:(META[type]||{});const slice=IMG_TYPES.includes(type);
+ return `<div class="vp" id="${id}w"><canvas id="${id}" width="512" height="512"></canvas>${o.extra||''}
+ <span class="ov tl">${m.tl||''}</span><span class="ov tr dim">${m.tr||''}</span>
+ ${slice?`<span class="ov ol">R</span><span class="ov or">L</span><span class="ov ot dim">A</span><span class="ov ob dim">P</span>
+ <span class="ov bl" style="width:23.8%"><span class="sbar"></span>50 mm</span><span class="ov br dim">${o.br||''}</span>`:''}</div>`}
+
+/* ================= Content ================= */
+const MAP_Q=[
+ {id:'broca',q:"A patient understands everything you say but speaks in slow, effortful, broken phrases. Where is the stroke most likely?",why:"Broca's area (pars opercularis and triangularis of the left inferior frontal gyrus) supports speech production. Damage causes non-fluent, expressive aphasia while comprehension stays largely intact."},
+ {id:'wernicke',q:"A patient speaks fluently, but the words make little sense and they can't follow your questions. Which area is damaged?",why:"Wernicke's area, the posterior part of the left superior temporal gyrus, supports language comprehension. Damage causes fluent but meaningless speech (receptive aphasia)."},
+ {id:'occipital',q:"A participant in the scanner watches a flickering checkerboard. Where does the strongest activation appear?",why:"Primary visual cortex (V1) lines the calcarine sulcus at the occipital pole. A flickering checkerboard is the classic way to find it."},
+ {id:'motor',q:"A participant taps the fingers of their right hand. Which strip of this left hemisphere lights up?",why:"Primary motor cortex (Brodmann area 4) runs along the precentral gyrus, just in front of the central sulcus. Each hemisphere controls the opposite side of the body."},
+ {id:'somato',q:"A researcher brushes a participant's right palm with a soft paintbrush. Where is the touch first mapped in this hemisphere?",why:"Primary somatosensory cortex (areas 3, 1 and 2) runs along the postcentral gyrus, just behind the central sulcus. Its distorted body map is the sensory homunculus."},
+ {id:'cerebellum',q:"After a small stroke, a patient walks with a wide, unsteady gait and can't bring a finger smoothly to their nose. Which structure?",why:"The cerebellum fine-tunes the timing and coordination of movement. Damage causes ataxia: clumsy, poorly coordinated movement on the same side as the lesion."},
+ {id:'stem',q:"Which structure keeps you breathing and your heart beating while you sleep?",why:"The brainstem (midbrain, pons and medulla) runs automatic functions such as breathing, heart rate and arousal."},
+ {id:'temporal',q:"A pure tone plays through MRI-safe headphones. Which lobe holds primary auditory cortex?",why:"Primary auditory cortex (Heschl's gyrus) lies on the upper surface of the temporal lobe, tucked inside the lateral (Sylvian) fissure."},
+ {id:'frontal',q:"In 1848 an iron rod shot through Phineas Gage's skull. He survived, but his planning and social behaviour changed. Which lobe was hit?",why:"The rod destroyed much of his left frontal lobe, especially prefrontal cortex, which supports planning, decisions and impulse control."},
+ {id:'parietal',q:"A patient sees objects clearly but misjudges where they are and reaches past them. Which lobe combines vision with position in space?",why:"The parietal lobe, around the intraparietal sulcus, builds a map of space and guides reaching (the dorsal 'where/how' pathway). Damage can cause misreaching or spatial neglect."}
+];
+const MOD={
+ eeg:{name:'EEG',full:'Scalp electrodes',t:[0.001,0.01],s:[20,90],img:'eeg'},
+ meg:{name:'MEG',full:'Magnetic fields',t:[0.001,0.01],s:[3,15],img:'meg'},
+ fnirs:{name:'fNIRS',full:'Near-infrared light',t:[0.05,1],s:[10,30],img:'fnirs'},
+ fmri:{name:'fMRI',full:'Blood-oxygen signal',t:[0.5,3],s:[1,4],img:'fmri'},
+ pet:{name:'PET',full:'Radioactive tracer',t:[30,600],s:[3,8],img:'petd2'},
+ ct:{name:'CT',full:'X-ray slices',t:[2,30],s:[0.3,0.8],img:'ctbleed'},
+ smri:{name:'MRI',full:'Structural anatomy',t:[120,600],s:[0.5,1.2],img:'t1'},
+ dti:{name:'DTI',full:'Water diffusion',t:[300,1200],s:[1.5,2.5],img:'fa'}
+};
+const CASES=[
+ {a:'eeg',q:"Does the brain register an unexpected sound within 100 milliseconds? The lab has a small budget and wants to test 40 students this week.",why:"EEG records the brain's electrical activity with millisecond timing, and it is cheap and quick to set up. Its weakness is location: signals smear as they pass through the skull."},
+ {a:'meg',q:"Before surgery, a neurosurgeon needs to pinpoint where epileptic spikes start, with millisecond timing and sharper localisation than scalp electrodes give.",why:"MEG measures the femtotesla magnetic fields produced by neural currents. Magnetic fields pass through the skull undistorted, so sources can be located better than with EEG, at the same millisecond timing."},
+ {a:'fmri',q:"Which regions respond more to faces than to houses? You need a whole-brain map accurate to a few millimetres.",why:"fMRI tracks the BOLD signal, a change in blood oxygenation that follows neural activity. It maps the whole brain at millimetre scale, but lags behind neurons by several seconds."},
+ {a:'pet',q:"How many dopamine D2 receptors are available in the striatum of patients compared with healthy controls?",why:"PET detects a radioactive tracer that binds to a specific molecule. ¹¹C-raclopride binds D2 receptors, so the striatum (caudate and putamen) lights up. No other method here measures brain chemistry this directly."},
+ {a:'dti',q:"Map the white-matter bundle, the arcuate fasciculus, that links Broca's and Wernicke's areas.",why:"DTI is an MRI technique that measures how water diffuses. Water moves more freely along axons than across them, so the main diffusion direction traces white-matter tracts. Colour shows direction."},
+ {a:'fnirs',q:"Study prefrontal activity in toddlers playing with blocks on the floor. They won't lie still in a loud tube.",why:"fNIRS shines near-infrared light through the scalp to measure oxygenated and deoxygenated haemoglobin in the outer cortex. The cap is portable and tolerates movement, which suits infants and real-world settings."},
+ {a:'ct',q:"Emergency department: a cyclist hit their head and may be bleeding inside the skull. You need an image within minutes, and they have a pacemaker.",why:"CT uses X-rays and takes seconds. Fresh blood is bright (hyperdense), and unlike MRI it is safe with most metal implants."},
+ {a:'smri',q:"Track how hippocampal volume and cortical thickness change in the same 200 people over ten years.",why:"Structural (T1-weighted) MRI gives millimetre anatomy with strong grey–white contrast and no radiation, so it is safe to repeat year after year."}
+];
+const READ=[
+ {k:'t1',why:"Scalp fat is bright, CSF in the ventricles and sulci is black, and white matter is brighter than grey matter. That combination is a T1-weighted MRI, the standard anatomical scan."},
+ {k:'t2',why:"Fluid is bright: the ventricles and the CSF in every sulcus glow white, and white matter is darker than grey matter. That is a T2-weighted MRI, good for spotting oedema and lesions."},
+ {k:'ctbleed',why:"Bone is solid white because it blocks X-rays, and grey and white matter look almost the same. The bright blob with a dark rim is fresh blood surrounded by oedema. That is a CT scan."},
+ {k:'fa',why:"Colour encodes fibre direction: red runs left–right (corpus callosum), green front–back, blue up–down (internal capsule). Grey matter and CSF are dark because diffusion there has no preferred direction. That is a DTI colour-FA map."},
+ {k:'pet',why:"A blurry, colour-scaled map of where a radiotracer collects. With FDG, glucose-hungry grey matter, thalamus and striatum glow while white matter stays dim. That is PET."},
+ {k:'fmri',why:"A coarse, low-detail echo-planar image with coloured clusters where the BOLD signal rose during a task: here visual and auditory cortex. The faint ghost shifted by half the image is a classic EPI artefact. That is fMRI."},
+ {k:'eeg',why:"Voltage traces in microvolts from electrodes named Fp1, C3, O2 and so on. Note the 10 Hz alpha rhythm at the back of the head and big blink artefacts at the front. That is EEG."},
+ {k:'meg',why:"A helmet of sensors, a red–blue map of magnetic field strength in femtotesla with a dipole pattern over each temporal lobe, and evoked responses peaking near 100 ms (the M100). That is MEG."},
+ {k:'fnirs',why:"Light sources and detectors on the forehead, and two traces: oxygenated haemoglobin rising and deoxygenated haemoglobin dipping during the task block. That is fNIRS."}
+];
+const NAMES={t1:'T1-weighted MRI',t2:'T2-weighted MRI',ctbleed:'CT',fa:'DTI colour map',pet:'PET',fmri:'fMRI',eeg:'EEG',meg:'MEG',fnirs:'fNIRS'};
+const AP=[
+ {k:0,t0:0.5,t1:1.0,v0:-70,v1:-55,lab:'threshold',txt:"A stimulus nudges the membrane up to threshold, about −55 mV"},
+ {k:1,t0:1.0,t1:1.45,v0:-55,v1:40,lab:'rising',txt:"Voltage-gated Na⁺ channels open and Na⁺ rushes into the cell"},
+ {k:2,t0:1.45,t1:2.4,v0:40,v1:-70,lab:'falling',txt:"Na⁺ channels inactivate; K⁺ channels open and K⁺ flows out"},
+ {k:3,t0:2.4,t1:3.0,v0:-70,v1:-80,lab:'undershoot',txt:"Slow K⁺ channels stay open, so the membrane dips below rest to −80 mV"},
+ {k:4,t0:3.0,t1:4.6,v0:-80,v1:-70,lab:'recovery',txt:"The Na⁺/K⁺ pump and leak channels restore resting potential, −70 mV"}
+];
+const Q_SPIKE={q:"You double the strength of a stimulus that was already above threshold. What happens to each spike?",opts:["It stays the same height; the neuron fires more often instead","It becomes twice as tall","It lasts twice as long","The neuron stops firing"],why:"Action potentials are all-or-none: once threshold is crossed, the spike always peaks near +40 mV. Neurons signal intensity through firing rate, not spike size."};
+const Q_BOLD1={q:"What does the BOLD signal in fMRI actually measure?",opts:["Local changes in oxygenated versus deoxygenated haemoglobin","Electrical currents from firing neurons","How much glucose neurons burn","A radioactive tracer in the blood"],why:"Deoxygenated haemoglobin is paramagnetic and slightly distorts the magnetic field. When active tissue receives a surge of oxygen-rich blood, deoxyhaemoglobin is washed out and the MRI signal rises by about 1–3 %."};
+const Q_BOLD2={q:"Two stimuli arrive 100 ms apart. Why can fMRI barely tell their responses apart?",opts:["The blood-flow response is slow and spreads over many seconds","The magnet isn't strong enough","fMRI only images white matter","Neurons respond identically to both"],why:"Neurons respond within milliseconds, but the haemodynamic response unfolds over 15–20 seconds, so close events blur together. For questions about timing, EEG or MEG is the better tool."};
+
+/* ================= Shared UI ================= */
+function head(code,title,round,n,res){
+ const dots=Array.from({length:n},(_,k)=>`<i class="${res[k]===true?'ok':res[k]===false?'no':''}${k===round&&res[k]===undefined?' cur':''}"></i>`).join('');
+ return `<div class="shead"><button class="back" data-back>← All stations</button><div class="dots" aria-hidden="true">${dots}</div></div><p class="eyebrow">Station ${code}</p><h2>${title}</h2>`;
+}
+function bindBack(){view.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{stopAnim();hub()})}
+function verdict(ok,text){return `<p class="verdict ${ok?'ok':'no'}">${ok?'Correct':'Not quite'}</p>${text?`<p class="vtext">${text}</p>`:''}`}
+function showFb(el,html,label,next){el.hidden=false;el.innerHTML=html+`<button class="btn" id="nextBtn">${label}</button>`;
+ document.getElementById('nextBtn').onclick=()=>{stopAnim();next()};el.scrollIntoView({block:'nearest',behavior:reduced?'auto':'smooth'})}
+function top(){window.scrollTo(0,0)}
+let animId=0;function stopAnim(){cancelAnimationFrame(animId);animId=0}
+function setDot(i,ok){const d=view.querySelectorAll('.dots i')[i];if(d)d.className=ok?'ok':'no'}
+function mcq(container,q,done){
+ const order=shuffle(q.opts.map((t,i)=>({t,i})));
+ container.innerHTML=`<div class="case"><p class="lead">${q.q}</p></div><div class="opts">${order.map(o=>`<button class="opt" data-i="${o.i}">${o.t}</button>`).join('')}</div><div class="fb" hidden></div>`;
+ const btns=container.querySelectorAll('.opt');
+ btns.forEach(b=>b.onclick=()=>{const ok=b.dataset.i==='0';
+  btns.forEach(x=>{x.disabled=true;if(x.dataset.i==='0')x.classList.add('right');else if(x===b)x.classList.add('wrong');else x.classList.add('dim')});
+  done(ok,container.querySelector('.fb'),verdict(ok,'')+`<p>${q.why}</p>`)});
+}
+function finish(key,score,code,title,replay){
+ scores[key]=score;save();readout();top();
+ const pct=score/MAX[key];
+ const line=pct===1?'Flawless. The lab director noticed.':pct>=.66?'Solid work. A couple of slips to review.':pct>=.34?'Getting there. Run it again to lock it in.':'Rough shift. The explanations are the point, so try again.';
+ view.innerHTML=`<div class="shead"><button class="back" data-back>← All stations</button></div><p class="eyebrow">Station ${code} complete</p><h2>${title}</h2>
+ <div class="result"><div class="big">${score}<small> / ${MAX[key]}</small></div><p>${line}</p>
+ <div class="row"><button class="btn" id="toHub">Back to stations</button><button class="btn ghost" id="again">Play again</button></div></div>`;
+ bindBack();document.getElementById('toHub').onclick=hub;document.getElementById('again').onclick=replay;
+}
+
+/* ================= Station A ================= */
+function runMap(){
+ const qs=shuffle(MAP_Q).slice(0,6);let i=0,score=0,res=[],locked=false;top();
+ function render(){const q=qs[i];
+  view.innerHTML=head('A','Cortex Map',i,qs.length,res)+`<div class="case"><p class="eyebrow">Case ${i+1} of ${qs.length} · tap the region</p><p class="lead">${q.q}</p></div>
+  <figure class="brainwrap"><div class="phead"><span>Lateral view · left hemisphere</span><span>Anterior ←</span></div>${brainSVG({interactive:true})}<figcaption class="cap">The front of the head is on the left. The thick groove is the lateral (Sylvian) fissure; the long one crossing it from the top is the central sulcus.</figcaption></figure><div class="fb" id="fb" hidden></div>`;
+  bindBack();
+  view.querySelectorAll('.reg').forEach(el=>{const go=()=>answer(el.dataset.id);el.addEventListener('click',go);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
+ }
+ const nm=id=>REG[id].name.replace(/^([A-Z])/,m=>m.toLowerCase()).replace(/^broca/,'Broca').replace(/^wernicke/,'Wernicke');
+ function answer(id){if(locked)return;locked=true;
+  const q=qs[i],ok=id===q.id;if(ok)score++;res[i]=ok;readout(score);
+  const svg=view.querySelector('svg.brain');svg.classList.add('done');svg.querySelectorAll('.reg').forEach(r=>r.removeAttribute('tabindex'));
+  svg.querySelector(`[data-id="${q.id}"]`).classList.add('answer');labelRegion(svg,q.id);
+  if(!ok){svg.querySelector(`[data-id="${id}"]`).classList.add('miss');labelRegion(svg,id)}
+  setDot(i,ok);
+  showFb(document.getElementById('fb'),verdict(ok,ok?REG[q.id].name:`You chose the ${nm(id)}. The answer is the ${nm(q.id)}.`)+`<p>${q.why}</p>`,
+   i<qs.length-1?'Next case':'Finish station',()=>{i++;locked=false;if(i<qs.length){render();top()}else finish('map',score,'A','Cortex Map',runMap)});
+ }
+ render();
+}
+
+/* ================= Station B ================= */
+const PX=t=>54+(Math.log10(t)+3)/7*292, PY=s=>14+(2-Math.log10(s))/3*186;
+function plotSVG(ans,wr){
+ let g='';
+ [[0.001,'1 ms'],[0.1,'100 ms'],[10,'10 s'],[600,'10 min']].forEach(([t,l])=>{g+=`<line class="grid" x1="${PX(t)}" x2="${PX(t)}" y1="14" y2="200"/><text class="ptxt" x="${PX(t)}" y="213" text-anchor="middle">${l}</text>`});
+ [[0.1,'0.1 mm'],[1,'1 mm'],[10,'1 cm'],[100,'10 cm']].forEach(([s,l])=>{g+=`<line class="grid" x1="54" x2="346" y1="${PY(s)}" y2="${PY(s)}"/><text class="ptxt" x="50" y="${PY(s)+3}" text-anchor="end">${l}</text>`});
+ // reference scales
+ g+=`<text class="ptxt" x="342" y="${PY(0.1)-4}" text-anchor="end" style="font-size:8px">cortical column ~0.5 mm</text><text class="ptxt" x="342" y="${PY(60)+3}" text-anchor="end" style="font-size:8px">lobe ~5 cm</text>`;
+ const boxes=Object.entries(MOD).map(([k,m])=>{const x=PX(m.t[0]),w=PX(m.t[1])-x,y=PY(m.s[1]),h=PY(m.s[0])-y;
+  return `<rect class="mbox${k===ans?' ans':k===wr?' wr':''}" x="${x}" y="${y}" width="${w}" height="${h}" rx="3"/><text class="mlab" x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle">${m.name}</text>`}).join('');
+ return `<svg viewBox="0 0 356 240" role="img" aria-label="Imaging methods placed by timing and spatial detail">${g}
+ <line class="ax" x1="54" x2="346" y1="200" y2="200"/><line class="ax" x1="54" x2="54" y1="14" y2="200"/>${boxes}
+ <text class="ptitle" x="200" y="232" text-anchor="middle">TIME PER SNAPSHOT →  slower</text>
+ <text class="ptitle" transform="translate(9 107) rotate(-90)" text-anchor="middle">SMALLEST DETAIL ↓ finer</text></svg>`;
+}
+function runScan(){
+ const qs=shuffle(CASES).slice(0,5);let i=0,score=0,res=[];top();
+ function render(){const q=qs[i];
+  view.innerHTML=head('B','Pick the Scanner',i,qs.length,res)+`<div class="case"><p class="eyebrow">Request ${i+1} of ${qs.length}</p><p class="lead">${q.q}</p></div>
+  <div class="stack"><figure class="chart" id="plot"><div class="phead"><span>Resolution map</span><span>log scales</span></div>${plotSVG()}<figcaption class="cap">Lower-left is sharper in both time and space. No method wins everywhere.</figcaption></figure>
+  <div class="opts grid4">${shuffle(Object.keys(MOD)).map(k=>`<button class="opt" data-k="${k}"><b>${MOD[k].name}</b><small>${MOD[k].full}</small></button>`).join('')}</div></div><div class="fb" id="fb" hidden></div>`;
+  bindBack();
+  const btns=view.querySelectorAll('.opt');
+  btns.forEach(b=>b.onclick=()=>{const k=b.dataset.k,ok=k===q.a;if(ok)score++;res[i]=ok;readout(score);
+   btns.forEach(x=>{x.disabled=true;if(x.dataset.k===q.a)x.classList.add('right');else if(x===b)x.classList.add('wrong');else x.classList.add('dim')});
+   document.querySelector('#plot svg').outerHTML=plotSVG(q.a,ok?null:k);setDot(i,ok);
+   const img=MOD[q.a].img;
+   showFb(document.getElementById('fb'),verdict(ok,ok?MOD[q.a].name+' is the tool for this.':`${MOD[k].name} won't do it here. Use ${MOD[q.a].name}.`)+`<p>${q.why}</p>`+
+    `<p class="eyebrow" style="margin-top:6px">What ${MOD[q.a].name} data looks like</p>`+viewport('bimg',img,{br:'z +12 mm'}),
+    i<qs.length-1?'Next request':'Finish station',()=>{i++;if(i<qs.length){render();top()}else finish('scan',score,'B','Pick the Scanner',runScan)});
+   paintScan(document.getElementById('bimg'),img,.1,i+3);
+  });
+ }
+ render();
+}
+
+/* ================= Station C ================= */
+const NX=t=>40+t/5*292, NY=v=>14+(50-v)/140*166;
+function segPath(s){let d='';for(let j=0;j<=16;j++){const u=j/16,e=u*u*(3-2*u),t=s.t0+(s.t1-s.t0)*u,v=s.v0+(s.v1-s.v0)*e;d+=(j?'L':'M')+NX(t).toFixed(1)+' '+NY(v).toFixed(1)}return d}
+const NODES=[100,144,184,224,264,300];
+function neuronSVG(){
+ const den=['M60 48C46 36 32 30 14 22','M44 37C40 26 36 18 30 8','M56 62C42 74 28 80 12 88','M38 77C34 87 30 95 26 104','M62 42C58 30 56 20 58 6','M60 68C58 82 60 92 64 106','M30 26C22 30 16 36 10 38','M26 82C18 80 12 74 6 70'];
+ return `<svg class="neuron" viewBox="0 0 340 118" role="img" aria-label="Diagram of a myelinated neuron">
+ ${den.map((d,k)=>`<path class="den" d="${d}" stroke-width="${k<6?2.4:1.4}"/>`).join('')}
+ <path class="mem" d="M58 44C64 34 82 34 88 44L100 52L100 58L88 66C82 76 64 76 58 66C52 60 52 50 58 44Z"/><circle class="nuc" cx="72" cy="55" r="6"/>
+ <line class="axon" x1="100" y1="55" x2="300" y2="55"/>
+ ${[[106,138],[146,178],[186,218],[226,258],[266,296]].map(([a,b])=>`<rect class="myelin" x="${a}" y="48" width="${b-a}" height="14" rx="7"/>`).join('')}
+ ${NODES.map((x,k)=>`<circle class="node" data-n="${k}" cx="${x}" cy="55" r="7"/>`).join('')}
+ <path class="den" stroke-width="2" d="M298 55C308 45 316 40 328 34M298 55L330 55M298 55C308 65 316 72 328 78"/>
+ <circle class="mem" cx="330" cy="34" r="4"/><circle class="mem" cx="332" cy="55" r="4"/><circle class="mem" cx="330" cy="78" r="4"/>
+ <circle class="spike" id="spike" cx="100" cy="55" r="5" opacity="0"/>
+ <text class="ptxt" x="18" y="116">dendrites</text><text class="ptxt" x="62" y="88">soma</text><text class="ptxt" x="88" y="40">axon hillock</text>
+ <text class="ptxt" x="122" y="78">myelin</text><text class="ptxt" x="150" y="36">node of Ranvier</text><line class="dash" x1="182" y1="39" x2="184" y2="48"/><text class="ptxt" x="262" y="100">axon terminals</text></svg>`;
+}
+function runSpike(){
+ const sp=document.getElementById('spike');if(!sp)return;
+ if(reduced){sp.setAttribute('opacity',1);sp.setAttribute('cx',300);return}
+ let t0=null;const hop=260;
+ const step=ts=>{if(t0===null)t0=ts;const e=ts-t0,k=Math.floor(e/hop),u=(e%hop)/hop;
+  if(k>=NODES.length-1){sp.setAttribute('cx',NODES[NODES.length-1]);sp.setAttribute('opacity',0);t0=null;animId=requestAnimationFrame(t=>setTimeout(()=>{animId=requestAnimationFrame(step)},500));return}
+  const x=NODES[k]+(NODES[k+1]-NODES[k])*Math.min(1,u*2.2);sp.setAttribute('cx',x);sp.setAttribute('opacity',1);
+  const nd=document.querySelector(`.node[data-n="${k}"]`);if(u<.08&&nd&&!nd.classList.contains('lit')){nd.classList.add('lit');setTimeout(()=>nd.classList.remove('lit'),500)}
+  animId=requestAnimationFrame(step)};
+ animId=requestAnimationFrame(step);
+}
+function runNeuron(){
+ let next=0,mistakes=0;top();const cards=shuffle(AP);
+ view.innerHTML=head('C','Fire a Neuron',0,2,[])+`<div class="case"><p class="eyebrow">Part 1 · build the action potential</p><p class="lead">The hillock has been nudged. Tap the events in the order they happen; each correct step draws the next stretch of the voltage trace recorded at the axon.</p></div>
+ <div class="stack"><figure class="chart"><div class="phead"><span>Pyramidal neuron · myelinated axon</span><span>not to scale</span></div>${neuronSVG()}</figure>
+ <div class="split"><figure class="chart"><div class="phead"><span>Membrane potential</span><span>whole-cell</span></div><svg viewBox="0 0 340 214" role="img" aria-label="Membrane voltage over 5 milliseconds">
+  ${[40,0,-55,-70,-80].map(v=>`<text class="ptxt" x="35" y="${NY(v)+3}" text-anchor="end">${v>0?'+':''}${v}</text>`).join('')}
+  <line class="ax" x1="40" x2="332" y1="180" y2="180"/><line class="ax" x1="40" x2="40" y1="14" y2="180"/>
+  <line class="dash" x1="40" x2="332" y1="${NY(-55)}" y2="${NY(-55)}"/><text class="ptxt" x="330" y="${NY(-55)-4}" text-anchor="end">threshold</text>
+  <line class="grid" x1="40" x2="332" y1="${NY(0)}" y2="${NY(0)}"/>
+  ${[0,1,2,3,4,5].map(t=>`<text class="ptxt" x="${NX(t)}" y="194" text-anchor="middle">${t}</text>`).join('')}
+  <text class="ptitle" x="186" y="208" text-anchor="middle">TIME (ms)</text><text class="ptitle" transform="translate(9 97) rotate(-90)" text-anchor="middle">mV</text>
+  <path class="trace base" d="M${NX(0)} ${NY(-70)} L${NX(0.5)} ${NY(-70)}"/><g id="segs"></g></svg></figure>
+  <div class="stack"><ol class="seq" id="seq"></ol><div class="cards" id="cards">${cards.map(c=>`<button class="card" data-k="${c.k}">${c.txt}</button>`).join('')}</div></div></div></div><div id="part2"></div>`;
+ bindBack();const segs=document.getElementById('segs');
+ view.querySelectorAll('.card').forEach(b=>b.onclick=()=>{const k=+b.dataset.k;
+  if(k!==next){mistakes++;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');return}
+  b.classList.add('placed');const s=AP[k];
+  segs.insertAdjacentHTML('beforeend',`<path class="trace${reduced?'':' draw'}" pathLength="1" d="${segPath(s)}"/>`);
+  const mid=(s.t0+s.t1)/2,lv=[NY(-48),NY(-10),NY(5),NY(-88)+10,NY(-60)][k];
+  segs.insertAdjacentHTML('beforeend',`<text class="ptxt" x="${k===1?NX(mid)-6:k===2?NX(mid)+8:NX(mid)}" y="${lv}" text-anchor="${k===1?'end':k===2?'start':'middle'}">${s.lab}</text>`);
+  document.getElementById('seq').insertAdjacentHTML('beforeend',`<li><span>${k+1}</span>${s.txt}</li>`);
+  next++;
+  if(next===AP.length){segs.insertAdjacentHTML('beforeend',`<path class="trace base" d="M${NX(4.6)} ${NY(-70)} L${NX(5)} ${NY(-70)}"/>`);
+   runSpike();const p1=Math.max(0,5-mistakes);readout(p1);setDot(0,p1>=4);
+   const p2=document.getElementById('part2'),box=document.createElement('div');box.className='fb';p2.appendChild(box);
+   showFb(box,verdict(mistakes===0,mistakes===0?'Perfect sequence: 5 / 5':`Sequence complete with ${mistakes} wrong tap${mistakes>1?'s':''}: ${p1} / 5`)+`<p>The whole spike lasts about 2 ms. Watch it travel down the axon above: myelin insulates the axon, so the spike regenerates only at the nodes of Ranvier and jumps between them (saltatory conduction), reaching up to 120 m/s. The refractory period behind it keeps it moving one way.</p>`,'Part 2',()=>{top();part2(p1)});
+  }});
+ function part2(p1){view.innerHTML=head('C','Fire a Neuron',1,2,[p1>=4])+`<p class="eyebrow">Part 2 · all or none</p><div id="m"></div>`;bindBack();
+  mcq(document.getElementById('m'),Q_SPIKE,(ok,fb,html)=>{const sc=p1+(ok?1:0);readout(sc);setDot(1,ok);showFb(fb,html,'Finish station',()=>finish('neuron',sc,'C','Fire a Neuron',runNeuron))})}
+}
+
+/* ================= Station D ================= */
+const fact=n=>n<=1?1:n*fact(n-1);
+function hrfRaw(t){if(t<=0)return 0;return Math.pow(t,5)*Math.exp(-t)/fact(5)-Math.pow(t,15)*Math.exp(-t)/fact(15)/6}
+let HMAX=0,HPEAK=0;for(let t=0;t<=30;t+=0.01){const v=hrfRaw(t);if(v>HMAX){HMAX=v;HPEAK=t}}
+const hrf=t=>hrfRaw(t)/HMAX;
+const BX=t=>36+t/24*294, BY=a=>16+(1.1-a)/1.4*164;
+const V1=[{x:.08,y:.8,r:.075,a:1},{x:-.08,y:.8,r:.075,a:.95}];
+function runBold(){
+ let guess=2;top();const xt=[0,4,8,12,16,20,24];
+ view.innerHTML=head('D','Read the BOLD',0,3,[])+`<div class="case"><p class="eyebrow">Part 1 · predict the peak</p><p class="lead">A checkerboard flashes for one second and visual neurons fire right away. When does the fMRI signal in visual cortex reach its peak? Drag the marker, then lock it in to run the scan.</p></div>
+ <div class="split"><div class="stack"><figure class="chart"><div class="phead"><span>Time course · V1 cluster</span><span>% signal change</span></div><svg viewBox="0 0 340 222" role="img" aria-label="BOLD signal over 24 seconds">
+  ${xt.map(t=>`<line class="grid" x1="${BX(t)}" x2="${BX(t)}" y1="16" y2="180"/><text class="ptxt" x="${BX(t)}" y="194" text-anchor="middle">${t}</text>`).join('')}
+  <line class="ax" x1="36" x2="330" y1="${BY(0)}" y2="${BY(0)}"/><line class="ax" x1="36" x2="36" y1="16" y2="180"/>
+  <text class="ptxt" x="32" y="${BY(1)+3}" text-anchor="end">2%</text><text class="ptxt" x="32" y="${BY(0)+3}" text-anchor="end">0</text>
+  <rect class="stim" x="${BX(0)}" y="172" width="${BX(1)-BX(0)}" height="8"/><text class="ptxt" x="${BX(1)+4}" y="179">neurons fire</text>
+  <text class="ptitle" x="183" y="210" text-anchor="middle">SECONDS AFTER THE FLASH</text><text class="ptitle" transform="translate(9 98) rotate(-90)" text-anchor="middle">BOLD</text>
+  <g id="curve"></g><line class="cursor" id="tcur" x1="${BX(0)}" x2="${BX(0)}" y1="16" y2="180" opacity="0"/>
+  <line class="guess" id="gline" x1="${BX(guess)}" x2="${BX(guess)}" y1="16" y2="180"/><text class="ptxt" id="gtxt" x="${BX(guess)+4}" y="26" style="fill:var(--hot2)">your guess</text></svg></figure>
+  <div class="slider"><label for="hrfGuess">Peak at <span id="gval">2.0</span> s</label><input type="range" id="hrfGuess" min="0" max="20" step="0.5" value="2"><button class="btn" id="lock" style="align-self:flex-start">Lock in and scan</button></div></div>
+  <figure>${viewport('bbase','fmri',{extra:'<canvas id="bpos" class="ovl" width="512" height="512" style="opacity:0"></canvas><canvas id="bneg" class="ovl" width="512" height="512" style="opacity:0"></canvas>',br:'<span id="bt">t = 0.0 s</span>'})}<figcaption class="cap">Axial EPI through the occipital pole. Colour appears where the signal rises (orange) or dips below baseline (blue).</figcaption></figure></div>
+  <div class="fb" id="fb" hidden></div>`;
+ bindBack();
+ document.getElementById('bbase').getContext('2d').drawImage(renderSlice('epi',.1,5),0,0,512,512);
+ document.getElementById('bpos').getContext('2d').drawImage(blobCanvas(.1,V1),0,0,512,512);
+ document.getElementById('bneg').getContext('2d').drawImage(blobCanvas(.1,V1,true),0,0,512,512);
+ const inp=document.getElementById('hrfGuess'),gl=document.getElementById('gline'),gt=document.getElementById('gtxt');
+ inp.oninput=()=>{guess=+inp.value;const x=BX(guess);gl.setAttribute('x1',x);gl.setAttribute('x2',x);gt.setAttribute('text-anchor',guess>15?'end':'start');gt.setAttribute('x',guess>15?x-4:x+4);document.getElementById('gval').textContent=guess.toFixed(1)};
+ function play(done){const cur=document.getElementById('tcur'),pos=document.getElementById('bpos'),neg=document.getElementById('bneg'),bt=document.getElementById('bt');
+  cur.setAttribute('opacity',1);const set=t=>{const v=hrf(t);cur.setAttribute('x1',BX(t));cur.setAttribute('x2',BX(t));pos.style.opacity=clamp(v,0,1);neg.style.opacity=clamp(-v*4,0,1);bt.textContent='t = '+t.toFixed(1)+' s'};
+  if(reduced){set(HPEAK);done&&done();return}
+  let t0=null;const step=ts=>{if(t0===null)t0=ts;const t=Math.min(24,(ts-t0)/1000*5);set(t);if(t<24)animId=requestAnimationFrame(step);else{set(HPEAK);done&&done()}};animId=requestAnimationFrame(step)}
+ document.getElementById('lock').onclick=()=>{
+  inp.disabled=true;document.getElementById('lock').disabled=true;
+  let d='';for(let t=0;t<=24;t+=0.2)d+=(t?'L':'M')+BX(t).toFixed(1)+' '+BY(hrf(t)).toFixed(1);
+  let und=8;for(let t=8;t<24;t+=.1)if(hrf(t)<hrf(und))und=t;
+  document.getElementById('curve').innerHTML=`<path class="trace${reduced?'':' draw'}" style="animation-duration:4.8s" pathLength="1" d="${d}"/>
+   <circle cx="${BX(HPEAK)}" cy="${BY(1)}" r="4" style="fill:var(--hot)"/><text class="ptxt" x="${BX(HPEAK)+8}" y="${BY(1)+16}" style="fill:var(--ink)">peak ≈ ${HPEAK.toFixed(1)} s</text>
+   <text class="ptxt" x="${BX(und)}" y="${BY(hrf(und))+14}" text-anchor="middle">undershoot</text>`;
+  const err=Math.abs(guess-HPEAK),p1=err<=1?3:err<=2.5?2:err<=4?1:0;
+  play(()=>{readout(p1);setDot(0,p1>=2);
+   showFb(document.getElementById('fb'),verdict(p1>=2,`You were ${err.toFixed(1)} s off: ${p1} / 3 points`)+`<p>Neurons fire within milliseconds, but blood flow takes time to respond. The haemodynamic response rises after 1–2 s, peaks around 5 s, then dips below baseline (the post-stimulus undershoot) before recovering about 20 s later. The coloured cluster sits along the calcarine sulcus, where V1 lives.</p>`,'Part 2',()=>part(1,p1,Q_BOLD1))});
+ };
+ function part(n,sc,q){top();view.innerHTML=head('D','Read the BOLD',n,3,[sc>=2].concat(n>1?[sc>=3]:[]))+`<p class="eyebrow">Part ${n+1} · ${n===1?'what the scanner sees':'timing limits'}</p><div id="m"></div>`;bindBack();
+  mcq(document.getElementById('m'),q,(ok,fb,html)=>{const s2=sc+(ok?1:0);readout(s2);setDot(n,ok);
+   showFb(fb,html,n===1?'Part 3':'Finish station',()=>n===1?part(2,s2,Q_BOLD2):finish('bold',s2,'D','Read the BOLD',runBold))})}
+}
+
+/* ================= Station E ================= */
+function runRead(){
+ const qs=shuffle(READ).slice(0,5);let i=0,score=0,res=[];top();
+ function render(){const q=qs[i],z=[.04,.1,.16,.24,.3][Math.floor(Math.random()*5)],seed=Math.floor(Math.random()*90)+1;
+  const wrong=shuffle(READ.filter(r=>r.k!==q.k)).slice(0,3).map(r=>r.k),opts=shuffle([q.k,...wrong]);
+  view.innerHTML=head('E','Name the Scan',i,qs.length,res)+`<div class="case"><p class="eyebrow">Image ${i+1} of ${qs.length}</p><p class="lead">This came off the lab server with its label missing. Which method produced it?</p></div>
+  <div class="split even"><figure>${viewport('rimg',q.k,{hide:true,n:i+1,br:'SUBJ 0'+(17+i)})}</figure>
+  <div class="stack"><div class="opts">${opts.map(k=>`<button class="opt" data-k="${k}"><b>${NAMES[k]}</b></button>`).join('')}</div>
+  <p class="explain"><b>Clues to look for:</b> what is bright and what is dark, whether the picture is anatomy or a signal over time, colour scales, units and labels.</p></div></div><div class="fb" id="fb" hidden></div>`;
+  bindBack();paintScan(document.getElementById('rimg'),q.k,z,seed);
+  const btns=view.querySelectorAll('.opt');
+  btns.forEach(b=>b.onclick=()=>{const k=b.dataset.k,ok=k===q.k;if(ok)score++;res[i]=ok;readout(score);setDot(i,ok);
+   btns.forEach(x=>{x.disabled=true;if(x.dataset.k===q.k)x.classList.add('right');else if(x===b)x.classList.add('wrong');else x.classList.add('dim')});
+   const w=document.getElementById('rimgw'),m=META[q.k];w.querySelector('.tl').innerHTML=m.tl;w.querySelector('.tr').innerHTML=m.tr;
+   showFb(document.getElementById('fb'),verdict(ok,ok?NAMES[q.k]:`This is ${/^[AEIOUF]/.test(NAMES[q.k])?'an':'a'} ${NAMES[q.k]}, not ${/^[AEIOUF]/.test(NAMES[k])?'an':'a'} ${NAMES[k]}.`)+`<p>${q.why}</p>`,
+    i<qs.length-1?'Next image':'Finish station',()=>{i++;if(i<qs.length){render();top()}else finish('read',score,'E','Name the Scan',runRead)})});
+ }
+ render();
+}
+
+/* ================= Hub ================= */
+const GLYPH={
+ map:`<svg viewBox="0 0 60 60"><path d="M10 34C6 22 16 10 30 9C44 8 54 18 52 30C51 38 44 42 38 41C34 46 24 48 18 44C13 43 11 39 10 34Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M31 10C29 18 28 26 26 33M14 34C22 31 30 30 40 30" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="42" cy="22" r="6" fill="var(--hot)" opacity=".8"/></svg>`,
+ scan:`<svg viewBox="0 0 60 60"><path d="M8 52V8H52" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="12" width="10" height="16" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="30" y="34" width="10" height="8" fill="var(--hot)" opacity=".8"/><rect x="42" y="40" width="7" height="6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`,
+ neuron:`<svg viewBox="0 0 60 60"><path d="M4 38H16L20 38L24 10L30 50L34 38H56" fill="none" stroke="var(--hot)" stroke-width="2.4" stroke-linejoin="round"/><path d="M4 30H56" stroke="currentColor" stroke-dasharray="3 3"/></svg>`,
+ bold:`<svg viewBox="0 0 60 60"><path d="M4 40C14 40 16 40 20 26C24 12 28 12 32 30C35 44 40 46 46 42C50 40 54 40 56 40" fill="none" stroke="var(--hot)" stroke-width="2.4"/><rect x="4" y="46" width="5" height="4" fill="currentColor"/></svg>`,
+ read:`<svg viewBox="0 0 60 60"><rect x="6" y="6" width="48" height="48" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="30" cy="30" rx="15" ry="19" fill="none" stroke="currentColor" stroke-width="2"/><path d="M27 22Q30 28 27 34M33 22Q30 28 33 34" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="30" y="58" font-size="7" fill="currentColor" text-anchor="middle" font-family="monospace">?</text></svg>`
+};
+const STATIONS=[
+ {k:'map',code:'A',title:'Cortex Map',desc:'Read a clinical case or a scanner task and tap the region on a detailed lateral brain.',run:runMap},
+ {k:'scan',code:'B',title:'Pick the Scanner',desc:'Match research requests to EEG, MEG, fMRI, PET, DTI, fNIRS, CT or structural MRI, then see the data each one gives.',run:runScan},
+ {k:'neuron',code:'C',title:'Fire a Neuron',desc:'Order the sodium and potassium events of an action potential and send the spike down a myelinated axon.',run:runNeuron},
+ {k:'bold',code:'D',title:'Read the BOLD',desc:'Predict when the fMRI signal peaks after a flash, then watch V1 light up in a simulated EPI scan.',run:runBold},
+ {k:'read',code:'E',title:'Name the Scan',desc:'Unlabelled images from the lab server. Tell T1 from T2, CT from PET, EEG from MEG by their tell-tale features.',run:runRead}
+];
+function rank(t){return t>=24?['Principal Investigator','You could run this lab.']:t>=18?['Postdoc','Strong across the board. Revisit your weakest station.']:t>=10?['PhD Student','The basics are there. Replay stations to sharpen up.']:['Lab Intern','Everyone starts here. The explanations after each answer are the lesson.']}
+const CONSOLE={t1:'T1',t2:'T2',ct:'CT',fa:'DTI',pet:'PET',fmri:'fMRI'};
+const CNOTE={t1:'<b>T1:</b> fat bright, fluid dark, white matter brighter than grey. The workhorse for anatomy.',t2:'<b>T2:</b> fluid bright, so CSF in every sulcus and ventricle glows. White matter turns darker than grey.',ct:'<b>CT:</b> X-ray density. Bone is white, CSF dark, grey and white matter barely differ.',fa:'<b>DTI:</b> colour shows fibre direction. Red left–right, green front–back, blue up–down.',pet:'<b>FDG PET:</b> glucose uptake. Grey matter, thalamus and striatum burn the most energy.',fmri:'<b>fMRI:</b> fast, low-detail EPI with task activation overlaid in visual and auditory cortex.'};
+let cMode='t1',cZ=.1,cPend=0;
+function hub(){
+ stopAnim();top();readout();
+ const played=STATIONS.filter(s=>scores[s.k]!=null).length,t=sum(),[r,rl]=rank(t);
+ view.innerHTML=`<section class="intro"><div><p class="eyebrow">Neuroscience · Neuroimaging</p><h1>The Scan<br><span>Room</span></h1></div>
+ <p class="lead">You've just joined a brain imaging lab. Learn where functions live in the cortex, which scanner answers which question, how a neuron fires and what an fMRI signal really measures.</p></section>
+ <section class="lab"><figure class="panel"><div class="phead"><span><b>Atlas</b> · lateral view, left hemisphere</span><span>Anterior ←</span></div>${brainSVG({atlas:true,labels:true,slice:cZ})}
+  <figcaption class="cap">Lobes are divided by the central sulcus, the lateral fissure and the parieto-occipital line. The dashed line is the axial slice shown in the console.</figcaption></figure>
+  <div class="panel"><div class="phead"><span><b>Console</b> · axial view</span><span id="czmm">z +${Math.round(cZ*100+5)} mm</span></div>
+  ${viewport('cv',cMode,{br:'IMG 1/176'})}
+  <div class="chips" role="group" aria-label="Contrast">${Object.entries(CONSOLE).map(([k,l])=>`<button class="chip" data-m="${k}" aria-pressed="${k===cMode}">${l}</button>`).join('')}</div>
+  <div class="ctl"><label for="zs"><span>Slice height</span><b id="zlab">${zText(cZ)}</b></label><input type="range" id="zs" min="-5" max="68" value="${Math.round(cZ*100)}"></div>
+  <p class="explain" id="cnote">${CNOTE[cMode]}</p></div></section>
+ <section class="stations">${STATIONS.map(s=>{const v=scores[s.k],has=v!=null;
+  return `<article class="station"><span class="glyph" aria-hidden="true">${GLYPH[s.k]}</span><p class="eyebrow">Station ${s.code}</p><h3>${s.title}</h3><p class="desc">${s.desc}</p>
+  <div class="sfoot"><span class="status${has?' done':''}">${has?`Scored ${v} / ${MAX[s.k]}`:`${MAX[s.k]} points`}</span><button class="btn${has?' ghost':''}" data-go="${s.k}">${has?'Replay':'Start'}</button></div></article>`}).join('')}
+  <article class="station report"><p class="eyebrow">Shift report</p><div class="big">${t}<small> / ${TOTAL}</small></div>
+  <div class="meter">${STATIONS.map(s=>`<i class="${scores[s.k]!=null?'on':''}"></i>`).join('')}</div>
+  <p class="desc">${played===STATIONS.length?`<b>${r}.</b> ${rl}`:`${played} of 5 stations done. Finish all five for your lab rank.`}</p>
+  ${played?`<div class="sfoot"><span></span><button class="btn" id="reset">Clear scores</button></div>`:''}</article></section>
+ <p class="foot">Images are simulated from a simplified tissue model, so contrasts behave like the real thing but anatomy is schematic. Cases are drawn at random, so replays bring new rounds. Scores stay in this browser only.</p>`;
+ view.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>STATIONS.find(s=>s.k===b.dataset.go).run());
+ const rs=document.getElementById('reset');if(rs)rs.onclick=()=>{scores=Object.assign({},EMPTY);save();hub()};
+ const draw=()=>{paintScan(document.getElementById('cv'),cMode,cZ,3);const w=document.getElementById('cvw'),m=META[cMode];w.querySelector('.tl').innerHTML=m.tl;w.querySelector('.tr').innerHTML=m.tr};
+ draw();
+ view.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{cMode=c.dataset.m;view.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));document.getElementById('cnote').innerHTML=CNOTE[cMode];draw()});
+ const zs=document.getElementById('zs');
+ zs.oninput=()=>{cZ=+zs.value/100;document.getElementById('zlab').textContent=zText(cZ);document.getElementById('czmm').textContent='z +'+Math.round(cZ*100+5)+' mm';
+  const y=sliceY(cZ);view.querySelectorAll('#sliceG line').forEach(l=>{l.setAttribute('y1',y);l.setAttribute('y2',y)});view.querySelector('#sliceG text').setAttribute('y',y-5);
+  if(!cPend)cPend=requestAnimationFrame(()=>{cPend=0;draw()})};
+}
+function zText(z){return z<.0?'basal ganglia, low':z<.2?'ventricles & thalamus':z<.42?'ventricle bodies':z<.55?'corpus callosum, high':'centrum semiovale'}
+hub();
+})();
+</script>
+</body>
+</html>
